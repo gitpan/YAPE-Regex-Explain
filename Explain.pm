@@ -5,7 +5,7 @@ use strict;
 use vars '$VERSION';
 
 
-$VERSION = '3.00';
+$VERSION = '3.01';
 
 
 my $exp_format = << 'END';
@@ -109,7 +109,6 @@ my %macros = (
   upper => 'uppercase letters',
   word => 'alphanumeric and underscore characters (like \w)',
   xdigit => 'hexadecimal digits (a-f, A-F, 0-9)',
-  
 );
 
 
@@ -430,7 +429,7 @@ sub YAPE::Regex::Explain::class::explanation {
         $explanation .= qq{ to the character named "$name"};
       }
       else {
-        $explanation .= ' to ' . $trans{$c2} || "'$c2'";
+        $explanation .= ' to ' . ($trans{$c2} || "'$c2'");
       }
     }
     $explanation .= ', ';
