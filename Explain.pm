@@ -5,7 +5,7 @@ use strict;
 use vars '$VERSION';
 
 
-$VERSION = '2.00';
+$VERSION = '3.00';
 
 
 my $exp_format = << 'END';
@@ -22,13 +22,26 @@ END
 
 my ($using_rex,$format,$br);
 
-my $ok_cc_REx = qr{(
+
+my $valid_POSIX = qr{
+  alpha | alnum | ascii | cntrl | digit | graph |
+  lower | print | punct | space | upper | word | xdigit
+}x;
+
+
+my $cc_REx = qr{(
   \\[0-3][0-7]{2} |
   \\x[a-fA-F0-9]{2} |
+  \\x\{[a-fA-F0-9]+\} |
   \\c. |
   \\[nrftbae] |
+  \\N\{([^\}]+)\} |
+  \\[wWdDsS] |
+  \\([Pp])([A-Za-z]|\{[^\}]+\}) |
+  \[:(\^?)($valid_POSIX):\] |
   \\?.
 )}xs;
+
 
 my %modes = ( on => '', off => '' );
 
@@ -79,6 +92,26 @@ my %exp = (
   '-x' => 'matching whitespace and # normally',
 
 );
+
+
+my %macros = (
+  # utf8/POSIX macros
+  alpha => 'letters',
+  alnum => 'letters and digits',
+  ascii => 'all ASCII characters (\000 - \177)',
+  cntrl => 'control characters (those with ASCII values less than 32)',
+  digit => 'digits (like \d)',
+  graph => 'alphanumeric and punctuation characters',
+  lower => 'lowercase letters',
+  print => 'alphanumeric, punctuation, and whitespace characters',
+  punct => 'punctuation characters',
+  space => 'whitespace characters (like \s)',
+  upper => 'uppercase letters',
+  word => 'alphanumeric and underscore characters (like \w)',
+  xdigit => 'hexadecimal digits (a-f, A-F, 0-9)',
+  
+);
+
 
 my %trans = (
   '\a' => q('\a' (alarm)),
@@ -229,11 +262,44 @@ sub YAPE::Regex::Explain::hex::explanation {
 }
 
 
+sub YAPE::Regex::Explain::utf8hex::explanation {
+  my $self = shift;
+  my $n = hex($self->{TEXT});
+
+  my $explanation = "UTF character $n" . $self->extra_info;
+  my $string = $self->string;
+  
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+}
+
+
 sub YAPE::Regex::Explain::ctrl::explanation {
   my $self = shift;
   my $c = $self->{TEXT};
 
   my $explanation = "^$c" . $self->extra_info;
+  my $string = $self->string;
+  
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+}
+
+
+sub YAPE::Regex::Explain::named::explanation {
+  my $self = shift;
+  my $c = $self->{TEXT};
+
+  my $explanation = "the character named '$c'" . $self->extra_info;
+  my $string = $self->string;
+  
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+}
+
+
+sub YAPE::Regex::Explain::Cchar::explanation {
+  my $self = shift;
+  my $c = $self->{TEXT};
+
+  my $explanation = "one byte (a C character)" . $self->extra_info;
   my $string = $self->string;
   
   if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
@@ -318,26 +384,57 @@ sub YAPE::Regex::Explain::backref::explanation {
 sub YAPE::Regex::Explain::class::explanation {
   my $self = shift;
   my $class = $self->{TEXT};
+  $class = $self->text if $self->{NEG} =~ /[pP]/;
 
-  my $explanation = "any character";
-  $explanation .= $self->{NEG} ? " except: " : " of: ";
+  my $explanation = "any character ";
+  $explanation .= ($self->{NEG} eq '^') ? "except: " : "of: ";
 
-  while ($class =~ s/^$ok_cc_REx//) {
-    my $c1 = $1;
-    $explanation .= (
-      $trans{$c1} ||
-      ($c1 =~ /\\[wWdDsS]/ and $exp{$c1}) ||
-      "'$c1'"
-    );
-    if ($class =~ s/^-$ok_cc_REx//) {
-      my $c2 = $1;
-      $explanation .= ' to ' . (
-        $trans{$c2} ||
-        ($c2 =~ /\\[wWdDsS]/ and $exp{$c2}) ||
-        "'$c2'"
+  while ($class =~ s/^$cc_REx//) {
+    my ($c1, $name, $pP, $utf8, $neg, $posix) = ($1,$2,$3,$4,$5,$6);
+    
+    if ($name) {
+      $explanation .= qq{the character named "$name"};
+    }
+    
+    elsif ($utf8) {
+      $utf8 =~ tr/{}//d;
+      (my $nice = $utf8) =~ s/^Is//;
+
+      my $add =
+        ($pP eq 'P' and "anything but ") .
+        ($macros{lc $nice} || "UTF macro '$utf8'");
+      $add =~ s/\\([wds])/\\\U$1/ if $pP eq 'P';
+      $explanation .= $add;
+    }
+    
+    elsif ($posix) {
+      my $add = ($neg and "anything but ") . $macros{lc $posix};
+      $add =~ s/\\([wds])/\\\U$1/ if $neg;
+      $explanation .= $add;
+    }
+    
+    else {
+      $explanation .= (
+        $trans{$c1} ||
+        ($c1 =~ /\\[wWdDsS]/ and $exp{$c1}) ||
+        "'$c1'"
       );
     }
+
+    if (!$utf8 and !$posix and $c1 !~ /\\[wWdDsS]/ and $class =~ s/^-$cc_REx//) {
+      my ($c2, $name, $pP, $utf8, $neg, $posix) = ($1,$2,$3,$4,$5,$6);
+
+      $class = "-$c2", next if $utf8 or $posix or $c2 =~ /\\[wWdDsS]/;
+
+      if ($name) {
+        $explanation .= qq{ to the character named "$name"};
+      }
+      else {
+        $explanation .= ' to ' . $trans{$c2} || "'$c2'";
+      }
+    }
     $explanation .= ', ';
+
   }
 
   substr($explanation,-2) = $self->extra_info;
@@ -655,6 +752,8 @@ extraction of specific nodes is doable.
 
 This module merely sub-classes C<YAPE::Regex>, and produces a rather verbose
 explanation of a regex, suitable for demonstration and tutorial purposes.
+Perl 5.6 regex structures like C<\p{...}> and C<\P{...}> and C<[:...:]> are
+now supported.
 
 =head2 Methods for C<YAPE::Regex::Explain>
 

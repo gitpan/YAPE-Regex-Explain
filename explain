@@ -1,0 +1,22 @@
+#!/usr/bin/perl -w
+
+use lib "/export/home/jpinyan/lib";
+use YAPE::Regex::Explain;
+
+use strict;
+
+my ($on,$off) = split /-/, shift || '';
+my $regex;
+my $exp;
+
+{ local $/; chop($regex = <>) }
+
+$exp = YAPE::Regex::Explain->new($regex);
+$exp->parse or $exp->error and die "explain error: " . $exp->error . "\n";
+
+if ($on or $off) {
+  $exp->{TREE}[0]{ON} = $on;
+  $exp->{TREE}[0]{OFF} = $off;
+}
+
+print $exp->explain;

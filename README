@@ -16,7 +16,8 @@ SYNOPSIS
 DESCRIPTION
     This module merely sub-classes `YAPE::Regex', and produces a
     rather verbose explanation of a regex, suitable for
-    demonstration and tutorial purposes.
+    demonstration and tutorial purposes. Perl 5.6 regex structures
+    like `\p{...}' and `\P{...}' and `[:...:]' are now supported.
 
   Methods for `YAPE::Regex::Explain'
 
