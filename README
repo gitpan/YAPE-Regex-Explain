@@ -18,6 +18,16 @@ DESCRIPTION
     rather verbose explanation of a regex, suitable for
     demonstration and tutorial purposes.
 
+  Methods for `YAPE::Regex::Explain'
+
+    * `my $p = YAPE::Regex::Explain->new($regex);'
+        Calls `YAPE::Regex''s `new' method (see its docs).
+
+    * `my $p = YAPE::Regex::Explain->explain($as_regex);'
+        Returns a string explaining the regex. If you pass an
+        argument (any argument at all) to this method, a valid regex
+        (under `/x') will be returned.
+
 SUPPORT
     Visit `YAPE''s web site at http://www.pobox.com/~japhy/YAPE/.
 

@@ -25,3 +25,5 @@ print "ok 1\n";
 my $REx = qr{[\n-z+-]+?};
 my $parser = YAPE::Regex::Explain->new($REx);
 print $parser->explain;
+print $parser->explain(1);
+
