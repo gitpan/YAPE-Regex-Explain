@@ -5,15 +5,23 @@ use strict;
 use vars '$VERSION';
 
 
-$VERSION = '1.03';
+$VERSION = '1.04';
 
 
 my $format = << 'END';
-^<<<<<<<<<<<<<<<<~~    ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+^<<<<<<<<<<<<<<<<<<<<<~~ ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ---------------------------------------------------------------------
 END
 
 my $br;
+
+my $ok_cc_REx = qr{(
+  \\[0-3][0-7]{2} |
+  \\x[a-fA-F0-9]{2} |
+  \\c. |
+  \\[nrftbae] |
+  \\?.
+)}xs;
 
 my %modes = ( on => '', off => '' );
 
@@ -81,11 +89,11 @@ sub explain {
   local $^A = << "END";
 The regular expression:
 
-  @{[ $self->display ]}
+@{[ $self->display ]}
 
 matches as follows:
   
-NODE                   EXPLANATION
+NODE                     EXPLANATION
 ---------------------------------------------------------------------
 END
   
@@ -278,20 +286,29 @@ sub YAPE::Regex::Explain::backref::explanation {
 
 sub YAPE::Regex::Explain::class::explanation {
   my $self = shift;
+  my $class = $self->{TEXT};
 
   my $explanation = "any character";
   $explanation .= $self->{NEG} ? " except: " : " of: ";
 
-  while ($self->{TEXT} =~ /(\\?)(.)(?:-(\\?)(.))?/sg) {
-    my $c1 = $1 . $2;
-    my $c2 = defined($4) ? ($3 . $4) : '';
-
-    $explanation .= ($trans{$c1} || ($1 and $exp{$c1}) || "'$c1'");
-    $explanation .= " to " . ($trans{$c2} || ($3 and $exp{$c2}) || "'$c2'")
-      if $c2 ne '';
-    $explanation .= ", ";
+  while ($class =~ s/^$ok_cc_REx//) {
+    my $c1 = $1;
+    $explanation .= (
+      $trans{$c1} ||
+      ($c1 =~ /\\[wWdDsS]/ and $exp{$c1}) ||
+      "'$c1'"
+    );
+    if ($class =~ s/^-$ok_cc_REx//) {
+      my $c2 = $1;
+      $explanation .= ' to ' . (
+        $trans{$c2} ||
+        ($c2 =~ /\\[wWdDsS]/ and $exp{$c2}) ||
+        "'$c2'"
+      );
+    }
+    $explanation .= ', ';
   }
-  
+
   substr($explanation,-2) = $self->extra_info;
   my $string = $self->string;
   

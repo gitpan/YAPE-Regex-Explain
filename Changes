@@ -1,5 +1,7 @@
 Revision history for Perl extension YAPE::Regex::Explain.
 
+1.04  Tue Feb  6 17:55:00 2001
+	- fixed character class handling
 1.03  Tue Feb  6 11:45:00 2001
 	- left 'use lib' line in AGAIN (I should be shot)
 1.02  Tue Feb  6 02:06:00 2001
