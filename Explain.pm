@@ -5,7 +5,7 @@ use strict;
 use vars '$VERSION';
 
 
-$VERSION = '3.01';
+$VERSION = '3.011';
 
 
 my $exp_format = << 'END';

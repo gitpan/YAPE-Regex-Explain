@@ -1,5 +1,7 @@
 Revision history for Perl extension YAPE::Regex::Explain.
 
+3.011 Mon May  7 12:20:00 2001
+	- added YAPE::Regex dependency in Makefile.PL
 3.01  Fri May  4 02:30:00 2001
 	- precedence fix on line 432
 	- I'm so dumb -- left a bad 'use lib' line in explain
