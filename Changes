@@ -1,5 +1,11 @@
 Revision history for Perl extension YAPE::Regex::Explain.
 
+1.03  Tue Feb  6 11:45:00 2001
+	- left 'use lib' line in AGAIN (I should be shot)
+1.02  Tue Feb  6 02:06:00 2001
+	- added comments for closing parens
+	- fixed extra_info() bug
+	- fixed class::explanation() bug
 1.01  Tue Feb  6 01:26:00 2001
 	- left 'use lib' line in
 	- fixed Changes log

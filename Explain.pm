@@ -5,12 +5,12 @@ use strict;
 use vars '$VERSION';
 
 
-$VERSION = '1.01';
+$VERSION = '1.03';
 
 
 my $format = << 'END';
 ^<<<<<<<<<<<<<<<<~~    ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
+---------------------------------------------------------------------
 END
 
 my $br;
@@ -86,7 +86,7 @@ The regular expression:
 matches as follows:
   
 NODE                   EXPLANATION
-====                   ===========
+---------------------------------------------------------------------
 END
   
   my @nodes = @{ $self->{TREE} };
@@ -104,7 +104,7 @@ sub YAPE::Regex::Explain::Element::extra_info {
   my ($q,$ng) = ($self->quant, $self->ngreed);
   my $ex = '';
   
-  $q =~ s/.\?$//;
+  $q =~ s/(?<=.)\?$//;
   $q =~ /(\d+)(,(\d*))?/;
 
   if ($2 and $3) { $q = "between $1 and $3 times" }
@@ -282,8 +282,14 @@ sub YAPE::Regex::Explain::class::explanation {
   my $explanation = "any character";
   $explanation .= $self->{NEG} ? " except: " : " of: ";
 
-  while ($self->{TEXT} =~ /(\\?.)/sg) {
-    $explanation .= ($trans{$1} || $exp{$1} || "'$1'") . ", ";
+  while ($self->{TEXT} =~ /(\\?)(.)(?:-(\\?)(.))?/sg) {
+    my $c1 = $1 . $2;
+    my $c2 = defined($4) ? ($3 . $4) : '';
+
+    $explanation .= ($trans{$c1} || ($1 and $exp{$c1}) || "'$c1'");
+    $explanation .= " to " . ($trans{$c2} || ($3 and $exp{$c2}) || "'$c2'")
+      if $c2 ne '';
+    $explanation .= ", ";
   }
   
   substr($explanation,-2) = $self->extra_info;
@@ -330,7 +336,7 @@ sub YAPE::Regex::Explain::group::explanation {
   ($format = $oldfmt) =~ s/  /~~/;
   
   $string = ')' . $self->quant;
-  $explanation = $self->extra_info;
+  $explanation = 'end of grouping';
 
   %modes = %old;
   
@@ -350,6 +356,7 @@ sub YAPE::Regex::Explain::capture::explanation {
   formline($format, $string, $explanation);
 
   my %old = %modes;
+  my $old_br = $br;
 
   my $oldfmt = $format;
   $format =~ s/\^<<(<+)/  ^$1/g;
@@ -358,7 +365,12 @@ sub YAPE::Regex::Explain::capture::explanation {
   ($format = $oldfmt) =~ s/  /~~/;
   
   $string = ')' . $self->quant;
-  $explanation = $self->extra_info;
+  $explanation = "end of \\$old_br";
+
+  $explanation .= << "END" if $self->quant;
+ (NOTE: because you're using a quantifier on this capture, only the LAST
+repetition of the captured pattern will be stored in \\$old_br)
+END
 
   %modes = %old;
   
@@ -385,7 +397,7 @@ sub YAPE::Regex::Explain::lookahead::explanation {
   ($format = $oldfmt) =~ s/  /~~/;
   
   $string = ')' . $self->quant;
-  $explanation = $self->extra_info;
+  $explanation = 'end of look-ahead' . $self->extra_info;
 
   %modes = %old;
   
@@ -412,7 +424,7 @@ sub YAPE::Regex::Explain::lookbehind::explanation {
   ($format = $oldfmt) =~ s/  /~~/;
   
   $string = ')' . $self->quant;
-  $explanation = $self->extra_info;
+  $explanation = 'end of look-behind' . $self->extra_info;
 
   %modes = %old;
   
@@ -456,13 +468,14 @@ sub YAPE::Regex::Explain::conditional::explanation {
   ($format = $oldfmt) =~ s/  /~~/;
   
   $string = ')' . $self->quant;
-  $explanation = $self->extra_info;
+  $explanation =
+    "end of conditional on \\$self->{BACKREF}" .
+    $self->extra_info;
 
   %modes = %old;
   
   formline($format, $string, $explanation);
 }
-
 
 
 1;
