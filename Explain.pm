@@ -1,12 +1,11 @@
 package YAPE::Regex::Explain;
 
-use lib "/home/jpinyan/lib/perl5/site_perl/5.005";
 use YAPE::Regex 'YAPE::Regex::Explain';
 use strict;
 use vars '$VERSION';
 
 
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 
 my $format = << 'END';
@@ -106,8 +105,11 @@ sub YAPE::Regex::Explain::Element::extra_info {
   my $ex = '';
   
   $q =~ s/.\?$//;
-  $q =~ /(\d+),?(\d*)/ and
-    ($q = $2 ? "between $1 and $2 times" : "at least $1 times");
+  $q =~ /(\d+)(,(\d*))?/;
+
+  if ($2 and $3) { $q = "between $1 and $3 times" }
+  elsif ($2) { $q = "at least $1 times" }
+  elsif (defined $1) { $q = "$1 times" }
 
   $ex .= ' (' . ($exp{$q} || $q) if $q;
   $ex .= ' (matching the least amount possible)' if $ng;
