@@ -5,7 +5,7 @@ use strict;
 use vars '$VERSION';
 
 
-$VERSION = '1.05';
+$VERSION = '2.00';
 
 
 my $exp_format = << 'END';
@@ -14,6 +14,10 @@ END
 
 my $REx_format = << 'END';
 ^<<<<<<<<<<<<<<<<<<<<< # ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+END
+
+my $noc_format = << 'END';
+^<<<<<<<<<<<<<<<<<<<<<
 END
 
 my ($using_rex,$format,$br);
@@ -89,7 +93,7 @@ my %trans = (
 
 sub explain {
   my $self = shift;
-  $using_rex = @_;
+  $using_rex = shift || '';
   local $^A = "";
   $^A = << "END" if not $using_rex;
 The regular expression:
@@ -99,11 +103,15 @@ The regular expression:
 matches as follows:
   
 NODE                     EXPLANATION
----------------------------------------------------------------------
+----------------------------------------------------------------------
 END
   
   my @nodes = @{ $self->{TREE} };
-  $format = $using_rex ? $REx_format : $exp_format;
+  $format =
+    $using_rex eq 'silent' ? $noc_format :
+    $using_rex eq 'regex'  ? $REx_format :
+                             $exp_format;
+
   while (my $node = shift @nodes) {
     $node->explanation;
   }
@@ -119,21 +127,27 @@ sub YAPE::Regex::Explain::Element::extra_info {
   my $self = shift;    
   my ($q,$ng) = ($self->quant, $self->ngreed);
   my $ex = '';
-  
-  $q =~ s/(?<=.)\?$//;
-  $q =~ /(\d+)(,(\d*))?/;
 
-  if ($2 and $3) { $q = "between $1 and $3 times" }
-  elsif ($2) { $q = "at least $1 times" }
-  elsif (defined $1) { $q = "$1 times" }
+  chop $q if $ng;
+  if ($q =~ /\{(\d*)(,?(\d*))\}/) {
+    if ($2 and length $3) { $q = "between $1 and $3 times" }
+    elsif ($2) { $q = "at least $1 times" }
+    elsif (length $1) { $q = "$1 times" }
+  }
 
-  $ex .= ' (' . ($exp{$q} || $q) if $q;
-  $ex .= ' (matching the least amount possible)' if $ng;
-  $ex .= ')' if $q;
-  
+  if ($q) {
+    $ex .= ' (' . ($exp{$q} || $q);
+    $ex .= ' (matching the ' . ($ng ? 'lea' : 'mo') . 'st amount possible)'
+      if $q !~ /^\d+ times$/;
+    $ex .= ')' if $q;
+  }
+
   return $ex;
 }
 
+
+# yes, I'm sure this could be made a bit more efficient...
+# but I'll deal with the small fish when the big fish are fried
 
 sub YAPE::Regex::Explain::Element::handle_flags {
   my $self = shift;
@@ -177,7 +191,8 @@ sub YAPE::Regex::Explain::anchor::explanation {
   my $explanation = $exp{$type} . $self->extra_info;
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }
+  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -188,7 +203,7 @@ sub YAPE::Regex::Explain::macro::explanation {
   my $explanation = $exp{$type} . $self->extra_info;
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -199,7 +214,7 @@ sub YAPE::Regex::Explain::oct::explanation {
   my $explanation = "character $n" . $self->extra_info;
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -210,7 +225,7 @@ sub YAPE::Regex::Explain::hex::explanation {
   my $explanation = "character $n" . $self->extra_info;
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -221,7 +236,7 @@ sub YAPE::Regex::Explain::ctrl::explanation {
   my $explanation = "^$c" . $self->extra_info;
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -233,7 +248,7 @@ sub YAPE::Regex::Explain::slash::explanation {
     $self->extra_info;
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -245,7 +260,7 @@ sub YAPE::Regex::Explain::any::explanation {
   my $explanation = $exp{$type} . $self->extra_info;
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -261,8 +276,16 @@ sub YAPE::Regex::Explain::text::explanation {
   
   my $explanation = "'$text'" . $self->extra_info;
   my $string = $self->string;
-  
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+
+  if ($using_rex) {
+    $string =~ s/\n/\\n/g;
+    $string =~ s/\r/\\r/g;
+    $string =~ s/\t/\\t/g;
+    $string =~ s/\f/\\f/g;
+    $string =~ s/([ #])/\\$1/g;
+  }  
+
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -274,8 +297,8 @@ sub YAPE::Regex::Explain::alt::explanation {
   
   my $oldfmt = $format;
   $format =~ s/ (\^<+)/$1 /g;
-  $format =~ s/  >/# >/ if $using_rex;
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  $format =~ s/ #/# / if $using_rex;
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
   $format = $oldfmt;
 
 }
@@ -288,7 +311,7 @@ sub YAPE::Regex::Explain::backref::explanation {
     "what was matched by capture \\$self->{TEXT}" . $self->extra_info;
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -320,7 +343,7 @@ sub YAPE::Regex::Explain::class::explanation {
   substr($explanation,-2) = $self->extra_info;
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -332,17 +355,43 @@ sub YAPE::Regex::Explain::whitespace::explanation { }
 
 sub YAPE::Regex::Explain::flags::explanation {
   my $self = shift;
+  if ($using_rex) {
+    $self->{ON} .= 'x' if $self->{ON} !~ /x/;
+    $self->{OFF} =~ s/x//;
+  }
   my $string = $self->string;
   my $explanation =
     'set flags for this block' .
     $self->handle_flags;
 
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+}
+
+
+sub YAPE::Regex::Explain::code::explanation {
+  my $self = shift;
+  my $string = $self->string;
+  my $explanation = 'run this block of Perl code';
+
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+}
+
+
+sub YAPE::Regex::Explain::later::explanation {
+  my $self = shift;
+  my $string = $self->string;
+  my $explanation = 'run this block of Perl code (that isn\'t interpolated until RIGHT NOW)';
+
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
 sub YAPE::Regex::Explain::group::explanation {
   my $self = shift;
+  if ($using_rex) {
+    $self->{ON} .= 'x' if $self->{ON} !~ /x/;
+    $self->{OFF} =~ s/x//;
+  }
   my $explanation =
     'group, but do not capture' .
     $self->handle_flags .
@@ -350,7 +399,7 @@ sub YAPE::Regex::Explain::group::explanation {
     ":";
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 
   my %old = %modes;
 
@@ -365,7 +414,7 @@ sub YAPE::Regex::Explain::group::explanation {
 
   %modes = %old;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -378,7 +427,7 @@ sub YAPE::Regex::Explain::capture::explanation {
     ":";
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 
   my %old = %modes;
   my $old_br = $br;
@@ -398,19 +447,19 @@ END
 
   %modes = %old;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
-sub YAPE::Regex::Explain::lookahead::explanation {
+sub YAPE::Regex::Explain::cut::explanation {
   my $self = shift;
   my $explanation =
-    'look ahead to see if there is' .
-    ($self->{POS} ? '' : ' not') .
-    ":";
+    'match (and do not backtrack afterwards)' .
+     $self->extra_info .
+     ":";
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 
   my %old = %modes;
 
@@ -420,11 +469,50 @@ sub YAPE::Regex::Explain::lookahead::explanation {
   $_->explanation for @{ $self->{CONTENT} };
   $format = $oldfmt;  
   $string = ')' . $self->quant;
-  $explanation = 'end of look-ahead' . $self->extra_info;
+  
+  $explanation = 'end of look-ahead';
 
   %modes = %old;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+}
+
+
+sub YAPE::Regex::Explain::lookahead::explanation {
+  my $self = shift;
+
+  if (not @{ $self->{CONTENT} }) {
+    my $explanation =
+      ($self->{POS} ? 'succeed' : 'fail') .
+      $self->extra_info;
+    my $string = $self->fullstring;
+    
+    if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+    return;
+  }  
+
+  my $explanation =
+    'look ahead to see if there is' .
+    ($self->{POS} ? '' : ' not') .
+    $self->extra_info .
+    ":";
+  my $string = $self->string;
+  
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+
+  my %old = %modes;
+
+  my $oldfmt = $format;
+  $format =~ s/\^<<(<+)/  ^$1/g;
+  $format =~ s/#  /  #/ if $using_rex;
+  $_->explanation for @{ $self->{CONTENT} };
+  $format = $oldfmt;  
+  $string = ')' . $self->quant;
+  $explanation = 'end of look-ahead';
+
+  %modes = %old;
+  
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -433,10 +521,11 @@ sub YAPE::Regex::Explain::lookbehind::explanation {
   my $explanation =
     'look behind to see if there is' .
     ($self->{POS} ? '' : ' not') .
+    $self->extra_info .
     ":";
   my $string = $self->string;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 
   my %old = %modes;
 
@@ -446,21 +535,51 @@ sub YAPE::Regex::Explain::lookbehind::explanation {
   $_->explanation for @{ $self->{CONTENT} };
   $format = $oldfmt;  
   $string = ')' . $self->quant;
-  $explanation = 'end of look-behind' . $self->extra_info;
+  $explanation = 'end of look-behind';
 
   %modes = %old;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
 sub YAPE::Regex::Explain::conditional::explanation {
   my $self = shift;
-  my $explanation = "if back-reference \\$self->{BACKREF} matched, then:";
-  my $string = $self->string;
+  my ($string,$explanation);
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if (ref $self->{CONTENT}) {
+    $string = '(?';
+    $explanation =
+      'if the following assertion is true' .
+      $self->extra_info .
+      ":";
+    if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }
+    $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 
+    my $oldfmt = $format;
+    $format =~ s/\^<<(<+)/  ^$1/g;
+    $format =~ s/#  /  #/ if $using_rex;
+    $self->{CONTENT}[0]->explanation;
+
+    $format =~ s/ (\^<+)/$1 /g;
+    $format =~ s/ #/# / if $using_rex;
+  
+    $explanation = 'then:';
+    if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }
+    $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  
+    $format = $oldfmt;
+  }
+  else {
+    $string = $self->string;
+    $explanation =
+      "if back-reference \\$self->{CONTENT} matched, then" .
+      $self->extra_info .
+      ":";
+    if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }
+    $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  }
+  
   my %old = %modes;
 
   my $oldfmt = $format;
@@ -471,30 +590,43 @@ sub YAPE::Regex::Explain::conditional::explanation {
 
   unless (@{ $self->{TRUE} }) {
     my $string = "";
-    my $explanation = "match nothing";
-    formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+    my $explanation = 'succeed';
+    if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }
+    $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  }
+
+  {
+    my $oldfmt = $format;
+
+    $format =~ s/ (\^<+)/$1 /g;
+    $format =~ s/ #/# / if $using_rex;
+  
+    my $string = "|";
+    my $explanation = 'else:';
+    if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }
+    $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+
+    $format = $oldfmt;
   }
   
-  if (@{ $self->{FALSE} }) {
-    my $string = "|";
-    my $explanation = "OTHERWISE";
-    my $oldfmt = $format;
-    $format =~ s/ (\^<+)/$1 /g;
-    $format =~ s/#  /  #/ if $using_rex;
-    formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
-    $format = $oldfmt;  }
-  
   $_->explanation for @{ $self->{FALSE} };
+
+  if (not @{ $self->{FALSE} }) {
+    my $string = "";
+    my $explanation = 'succeed';
+    if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }
+    $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  }  
 
   $format = $oldfmt;  
   $string = ')' . $self->quant;
   $explanation =
-    "end of conditional on \\$self->{BACKREF}" .
-    $self->extra_info;
+    "end of conditional" .
+    (ref $self->{CONTENT} ? '' : " on \\$self->{CONTENT}");
 
   %modes = %old;
   
-  formline($format, $string, $explanation) while length($string . $explanation); $^A .= ($using_rex ? '' : '-' x 70) . "\n";
+  if ($using_rex ne 'silent') { formline($format, $string, $explanation) while length($string . $explanation) } else { formline($format, $string) while length($string) }  $^A .= ($using_rex ? '' : '-' x 70) . "\n";
 }
 
 
@@ -532,10 +664,11 @@ explanation of a regex, suitable for demonstration and tutorial purposes.
 
 Calls C<YAPE::Regex>'s C<new> method (see its docs).
 
-=item * C<my $p = YAPE::Regex::Explain-E<gt>explain($as_regex);>
+=item * C<my $p = YAPE::Regex::Explain-E<gt>explain($mode);>
 
-Returns a string explaining the regex.  If you pass an argument (any argument at
-all) to this method, a valid regex (under C</x>) will be returned.
+Returns a string explaining the regex.  If C<$mode> is C<regex>, it will output
+a valid regex (instead of the normal string).  If C<$mode> is C<silent>, no
+comments will be added, but the regex will be expanded into a readable format.
 
 =back
 

@@ -1,5 +1,10 @@
 Revision history for Perl extension YAPE::Regex::Explain.
 
+2.00  Thu Feb  8 13:00:00 2001
+	- added (?{...}), (??{...}), and (?>...)
+	- added full (?(...)...|...) support
+	- explain() is changed to allow 'regex' or 'silent'
+	- formline() work-arounds up the wazoo
 1.05  Wed Feb  7 17:26:00 2001
 	- WARNING: formline() and formats SUCK for some evil reason
 	- added documentation for explain() method

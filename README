@@ -23,10 +23,11 @@ DESCRIPTION
     * `my $p = YAPE::Regex::Explain->new($regex);'
         Calls `YAPE::Regex''s `new' method (see its docs).
 
-    * `my $p = YAPE::Regex::Explain->explain($as_regex);'
-        Returns a string explaining the regex. If you pass an
-        argument (any argument at all) to this method, a valid regex
-        (under `/x') will be returned.
+    * `my $p = YAPE::Regex::Explain->explain($mode);'
+        Returns a string explaining the regex. If `$mode' is
+        `regex', it will output a valid regex (instead of the normal
+        string). If `$mode' is `silent', no comments will be added,
+        but the regex will be expanded into a readable format.
 
 SUPPORT
     Visit `YAPE''s web site at http://www.pobox.com/~japhy/YAPE/.

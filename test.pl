@@ -22,8 +22,8 @@ print "ok 1\n";
 # (correspondingly "not ok 13") depending on the success of chunk 13
 # of the test code):
 
-my $REx = qr{[\n-z+-]+?};
-my $parser = YAPE::Regex::Explain->new($REx);
+my $parser = YAPE::Regex::Explain->new(q{ foo (?(?{ $x })(?!)) b | a{2} });
 print $parser->explain;
-print $parser->explain(1);
+print $parser->explain('regex');
+print $parser->explain('silent');
 
