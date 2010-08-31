@@ -5,7 +5,7 @@ use strict;
 use vars '$VERSION';
 
 
-$VERSION = '3.011';
+$VERSION = '4.00';
 
 
 my $exp_format = << 'END';
@@ -126,6 +126,7 @@ my %trans = (
 sub explain {
   my $self = shift;
   $using_rex = shift || '';
+  my $stat = @{[ $self->parse ]};
   local $^A = "";
   $^A = << "END" if not $using_rex;
 The regular expression:
@@ -537,7 +538,7 @@ sub YAPE::Regex::Explain::capture::explanation {
   $explanation = "end of \\$old_br";
 
   $explanation .= << "END" if $self->quant;
- (NOTE: because you're using a quantifier on this capture, only the LAST
+ (NOTE: because you are using a quantifier on this capture, only the LAST
 repetition of the captured pattern will be stored in \\$old_br)
 END
 
@@ -728,11 +729,14 @@ sub YAPE::Regex::Explain::conditional::explanation {
 
 1;
 
-__END__
 
 =head1 NAME
 
 YAPE::Regex::Explain - explanation of a regular expression
+
+=head1 VERSION
+
+This document refers to YAPE::Regex::Explain version 4.00.
 
 =head1 SYNOPSIS
 
@@ -770,20 +774,20 @@ comments will be added, but the regex will be expanded into a readable format.
 
 =back
 
-=head1 SUPPORT
+=head1 DEPENDENCIES
 
-Visit C<YAPE>'s web site at F<http://www.pobox.com/~japhy/YAPE/>.
-
-=head1 SEE ALSO
-
-The C<YAPE::Regex> documentation.
+L<YAPE::Regex>
 
 =head1 AUTHOR
 
-  Jeff "japhy" Pinyan
-  CPAN ID: PINYAN
-  japhy@pobox.com
-  http://www.pobox.com/~japhy/
+The original author is Jeff "japhy" Pinyan (CPAN ID: PINYAN).
+
+Gene Sullivan (gsullivan@cpan.org) is a co-maintainer.
+
+=head1 LICENSE
+
+This module is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.  See L<perlartistic>.
 
 =cut
 

@@ -1,5 +1,12 @@
 Revision history for Perl extension YAPE::Regex::Explain.
 
+4.00  Aug 31 2010 [GSULLIVAN]
+	- Gene Sullivan becomes a co-maintainer.  All previous versions by PINYAN.
+	- Fixed RT bug #4577: applied patch from CPAN author JONASBN to Makefile.PL
+	- Fixed RT bug #14115: applied my patch to explain() function
+	- Fixed RT bug #58041: added license to POD
+	- Use a more standard README file
+	- Minor POD changes
 3.011 Mon May  7 12:20:00 2001
 	- added YAPE::Regex dependency in Makefile.PL
 3.01  Fri May  4 02:30:00 2001
