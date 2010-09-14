@@ -5,7 +5,7 @@ use strict;
 use vars '$VERSION';
 
 
-$VERSION = '4.00';
+$VERSION = '4.01';
 
 
 my $exp_format = << 'END';
@@ -736,7 +736,7 @@ YAPE::Regex::Explain - explanation of a regular expression
 
 =head1 VERSION
 
-This document refers to YAPE::Regex::Explain version 4.00.
+This document refers to YAPE::Regex::Explain version 4.01.
 
 =head1 SYNOPSIS
 
@@ -755,8 +755,6 @@ extraction of specific nodes is doable.
 
 This module merely sub-classes C<YAPE::Regex>, and produces a rather verbose
 explanation of a regex, suitable for demonstration and tutorial purposes.
-Perl 5.6 regex structures like C<\p{...}> and C<\P{...}> and C<[:...:]> are
-now supported.
 
 =head2 Methods for C<YAPE::Regex::Explain>
 
@@ -768,11 +766,41 @@ Calls C<YAPE::Regex>'s C<new> method (see its docs).
 
 =item * C<my $p = YAPE::Regex::Explain-E<gt>explain($mode);>
 
-Returns a string explaining the regex.  If C<$mode> is C<regex>, it will output
+Returns a string explaining the regex.  While not required for all regexes,
+it is sometimes necessary to compile the regex using the C<qr//> operator
+before passing it to the C<explain> method.
+If C<$mode> is C<regex>, it will output
 a valid regex (instead of the normal string).  If C<$mode> is C<silent>, no
 comments will be added, but the regex will be expanded into a readable format.
 
 =back
+
+=head1 EXAMPLES
+
+Print the full explanation for the regex C<\Q[abc]\E\d+>, compiling it first:
+
+    print YAPE::Regex::Explain->new(qr/\Q[abc]\E\d+/)->explain();
+
+Print the explanation for the regex C<\w[a-f]*>, without comments:
+
+    print YAPE::Regex::Explain->new('\w[a-f]*')->explain('silent');
+
+Print the explanation for a multi-line regex:
+
+    my $re = qr{
+            (foo|bar)   # just a comment
+            \d+
+            /
+    }ix;
+    print YAPE::Regex::Explain->new($re)->explain();
+
+=head1 LIMITATIONS
+
+There is no support for regular expression syntax added after Perl
+version 5.6, particularly any constructs added in 5.10.  For
+examples, refer to:
+
+L<http://perldoc.perl.org/perl5100delta.html#Regular-expressions>
 
 =head1 DEPENDENCIES
 

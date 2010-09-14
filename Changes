@@ -1,5 +1,11 @@
 Revision history for Perl extension YAPE::Regex::Explain.
 
+4.01  Sep 14 2010 [GSULLIVAN]
+	- Added basic tests and tests for RT bug #14115.
+	- Tests use Test::More
+	- Added LIMITATIONS and EXAMPLES sections to POD
+	- Added 't' and 'examples' directories
+	- Added META.yml file
 4.00  Aug 31 2010 [GSULLIVAN]
 	- Gene Sullivan becomes a co-maintainer.  All previous versions by PINYAN.
 	- Fixed RT bug #4577: applied patch from CPAN author JONASBN to Makefile.PL
